@@ -1,0 +1,41 @@
+[
+  {
+    "headers": {
+      "connection": "upgrade",
+      "host": "n8n.gslb.vip",
+      "x-real-ip": "61.160.196.210",
+      "x-forwarded-for": "61.160.196.210",
+      "x-forwarded-proto": "https",
+      "content-length": "407",
+      "user-agent": "Go-http-client/1.1",
+      "content-type": "application/json",
+      "x-env": "dev",
+      "x-token": "abc123",
+      "accept-encoding": "gzip"
+    },
+    "params": {},
+    "query": {},
+    "body": {
+      "uid": 48680,
+      "subject": "会议纪要",
+      "from": "mygslb@petalmail.com <mygslb@petalmail.com>",
+      "date": "Sun, 28 Sep 2025 07:54:07 GMT",
+      "body": "请看附件",
+      "body_lines": [
+        "请看附件"
+      ],
+      "preview": "请看附件",
+      "word_count": 4,
+      "mailbox": "INBOX",
+      "timestamp": 1759046057,
+      "has_attachments": true,
+      "attachments": [
+        "IMG_10092.jpg",
+        "IMG_20250928_074906.jpg",
+        "=?gbk?B?OWI4YjUyNmUtNDMwYi00NmI1LTk1ZDItZTVjNDVi?="
+      ]
+    },
+    "webhookUrl": "https://n8n.gslb.vip/webhook/58cfaa8b-6e07-4be2-bacc-44854ad40669",
+    "executionMode": "production"
+  }
+]

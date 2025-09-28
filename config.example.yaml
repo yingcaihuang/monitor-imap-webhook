@@ -1,0 +1,24 @@
+# 示例配置文件 (YAML)
+# 可通过: ./monitor --config config.yaml 启用
+# 优先级: 命令行参数 > 配置文件 > 环境变量 > 内部默认值
+
+imap_host: imap.example.com
+imap_port: 993
+username: user@example.com
+password: example-pass
+mailbox: INBOX
+# 直接 TLS (993) 与 starttls 只能二选一
+tls: true
+starttls: false
+insecure_skip_verify: false
+interval: 30s  # 轮询/回退检查周期 (CheckInterval)，用于在服务器未推送 EXISTS/MailboxUpdate 时定期退出 IDLE 做一次 STATUS；设为0则禁用
+drain_timeout: 2s  # 在检测到新邮件并发出事件后，重新进入 IDLE 之前等待处理完成的最长时间；避免 IDLE/FETCH 竞争。设为0表示不等待。
+webhook: http://127.0.0.1:8080/mail
+webhook_header: X-Token=abc123;X-Env=dev
+fetch_body_bytes: 204800
+retry_max: 5
+retry_backoff: 1s
+html2text: simple  # simple|preserve-line|none
+raw_html: false    # 是否在 webhook payload 中包含原始 HTML（可能较大）
+enable_blocks: false # 基于 HTML 构建轻量级结构化 blocks AST（heading/paragraph/list/blockquote/code），实验特性
+debug: true

@@ -1,0 +1,24 @@
+# 示例配置文件 (YAML)
+# 可通过: ./monitor --config config.yaml 启用
+# 优先级: 命令行参数 > 配置文件 > 环境变量 > 内部默认值
+
+imap_host: imap.qq.com
+imap_port: 993
+username: 303441547@qq.com
+password: licpufyntrmhbgie
+mailbox: INBOX
+# 直接 TLS (993) 与 starttls 只能二选一
+tls: true
+starttls: false
+insecure_skip_verify: false
+interval: 10s
+drain_timeout: 2s
+webhook: https://n8n.gslb.vip/webhook/58cfaa8b-6e07-4be2-bacc-44854ad40669
+webhook_header: X-Token=abc123;X-Env=dev
+fetch_body_bytes: 204800
+retry_max: 5
+retry_backoff: 1s
+raw_html: false    # 是否在 webhook payload 中包含原始 HTML（可能较大）
+enable_blocks: false
+debug: true
+html2text: simple  # simple|preserve-line|none
