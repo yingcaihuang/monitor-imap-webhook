@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
   workflow_dispatch: {}
 
 jobs:
@@ -30,11 +32,24 @@ jobs:
           sudo apt-get install -y ruby ruby-dev build-essential rpm
           sudo gem install --no-document fpm
 
+      - name: Derive Version
+        id: ver
+        run: |
+          ref_name='${{ github.ref_name }}'
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "version=$ref_name" >> $GITHUB_OUTPUT
+          else
+            short=$(git rev-parse --short HEAD)
+            echo "version=main-$short" >> $GITHUB_OUTPUT
+          fi
+          cat $GITHUB_OUTPUT
+
       - name: Build & Package
         env:
-          VERSION: "${{ github.ref_name }}"
+          VERSION: "${{ steps.ver.outputs.version }}"
           ARCH: ${{ matrix.arch }}
         run: |
+          echo "Using version=$VERSION"
           bash package.sh
 
       - name: Upload deb
