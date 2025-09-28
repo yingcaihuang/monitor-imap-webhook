@@ -11,10 +11,9 @@ OS=${OS:-linux}
 PREFIX=${PREFIX:-/usr/local}
 ROOT_DIR=$(pwd)
 OUT_DIR=$ROOT_DIR/dist
+PKG_DIR=$OUT_DIR/pkgroot
 
 mkdir -p "$OUT_DIR"
-
-cd "$PKG_DIR"
 
 echo "==> Building Go binary ($OS/$ARCH)"
 GOOS=$OS GOARCH=$ARCH CGO_ENABLED=0 go build -ldflags="-s -w -X main.buildVersion=$VERSION -X main.buildRevision=$REVISION -X main.buildTime=$BUILD_TIME" -o "$OUT_DIR/$BIN_NAME" ./cmd/monitor
@@ -24,7 +23,6 @@ if ! command -v fpm >/dev/null 2>&1; then
   exit 1
 fi
 
-PKG_DIR=$OUT_DIR/pkgroot
 POSTINST=$OUT_DIR/postinstall.sh
 PRERM=$OUT_DIR/prerm.sh
 rm -rf "$PKG_DIR"
@@ -34,8 +32,12 @@ chmod 0755 "$PKG_DIR$PREFIX/bin/$BIN_NAME"
 
 # 示例配置模板（不包含敏感信息）
 mkdir -p "$PKG_DIR/etc/$APP"
+if [ ! -f config.example.yaml ]; then
+  echo "config.example.yaml 缺失" >&2; exit 1; fi
 cp config.example.yaml "$PKG_DIR/etc/$APP/config.example.yaml"
 # systemd service
+if [ ! -f packaging/monitor-imap-webhook.service ]; then
+  echo "packaging/monitor-imap-webhook.service 缺失" >&2; exit 1; fi
 install -Dm0644 packaging/monitor-imap-webhook.service "$PKG_DIR/lib/systemd/system/monitor-imap-webhook.service"
 
 DESCRIPTION="IMAP mailbox monitor that pushes parsed emails to a webhook (Go)"
@@ -79,15 +81,13 @@ COMMON_FPM_ARGS=(
   --before-remove "$PRERM"
 )
 
-mkdir -p "$OUT_DIR"
-
 echo "==> Debug: listing package root" >&2
-find "$PKG_DIR" -maxdepth 4 -type f -print >&2 || true
+find "$PKG_DIR" -maxdepth 6 -type f -print >&2 || true
 
 # deb
-fpm "${COMMON_FPM_ARGS[@]}" -t deb -p "$OUT_DIR/$APP"_VERSION_ARCH.deb .
+fpm "${COMMON_FPM_ARGS[@]}" -t deb -p "$OUT_DIR/$APP"_VERSION_ARCH.deb -C "$PKG_DIR" .
 # rpm
-fpm "${COMMON_FPM_ARGS[@]}" -t rpm -p "$OUT_DIR/$APP"-VERSION.ARCH.rpm .
+fpm "${COMMON_FPM_ARGS[@]}" -t rpm -p "$OUT_DIR/$APP"-VERSION.ARCH.rpm -C "$PKG_DIR" .
 
 cd "$OUT_DIR"
 for f in $APP*_VERSION_*; do
