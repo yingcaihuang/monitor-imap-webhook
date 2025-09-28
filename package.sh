@@ -14,6 +14,8 @@ OUT_DIR=$ROOT_DIR/dist
 
 mkdir -p "$OUT_DIR"
 
+cd "$PKG_DIR"
+
 echo "==> Building Go binary ($OS/$ARCH)"
 GOOS=$OS GOARCH=$ARCH CGO_ENABLED=0 go build -ldflags="-s -w -X main.buildVersion=$VERSION -X main.buildRevision=$REVISION -X main.buildTime=$BUILD_TIME" -o "$OUT_DIR/$BIN_NAME" ./cmd/monitor
 
@@ -72,17 +74,20 @@ COMMON_FPM_ARGS=(
   --url "https://example.com/$APP"
   --license "Proprietary"
   --maintainer "Your Name <you@example.com>"
-  --config-files "/etc/$APP/config.example.yaml"
+  --config-files /etc/$APP/config.example.yaml
   --after-install "$POSTINST"
   --before-remove "$PRERM"
 )
 
 mkdir -p "$OUT_DIR"
 
+echo "==> Debug: listing package root" >&2
+find "$PKG_DIR" -maxdepth 4 -type f -print >&2 || true
+
 # deb
-fpm "${COMMON_FPM_ARGS[@]}" -t deb -p "$OUT_DIR/$APP"_VERSION_ARCH.deb "$PKG_DIR"/.
+fpm "${COMMON_FPM_ARGS[@]}" -t deb -p "$OUT_DIR/$APP"_VERSION_ARCH.deb .
 # rpm
-fpm "${COMMON_FPM_ARGS[@]}" -t rpm -p "$OUT_DIR/$APP"-VERSION.ARCH.rpm "$PKG_DIR"/.
+fpm "${COMMON_FPM_ARGS[@]}" -t rpm -p "$OUT_DIR/$APP"-VERSION.ARCH.rpm .
 
 cd "$OUT_DIR"
 for f in $APP*_VERSION_*; do
