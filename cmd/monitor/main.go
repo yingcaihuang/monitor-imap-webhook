@@ -62,6 +62,7 @@ func main() {
 			if msg.HasAttachments {
 				base.HasAttachments = true
 				base.Attachments = msg.AttachmentNames
+				base.AttachmentCount = len(msg.AttachmentNames)
 			}
 			if cfg.IncludeRawHTML && msg.RawHTML != "" {
 				base.RawHTML = msg.RawHTML

@@ -21,4 +21,5 @@ retry_backoff: 1s
 html2text: simple  # simple|preserve-line|none
 raw_html: false    # 是否在 webhook payload 中包含原始 HTML（可能较大）
 enable_blocks: false # 基于 HTML 构建轻量级结构化 blocks AST（heading/paragraph/list/blockquote/code），实验特性
+skip_inline_images: false # 是否忽略 disposition=inline 且 content-type image/* 的内联嵌入图片附件
 debug: true

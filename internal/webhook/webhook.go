@@ -27,6 +27,7 @@ type Payload struct {
 	Blocks         []interface{} `json:"blocks,omitempty"`   // 结构化 AST blocks (可选)
 	HasAttachments bool          `json:"has_attachments,omitempty"`
 	Attachments    []string      `json:"attachments,omitempty"`
+	AttachmentCount int          `json:"attachment_count,omitempty"`
 }
 
 type Sender struct {
@@ -108,7 +109,20 @@ func BuildPayload(msg *Payload, bodyLimit int) Payload {
 		break
 	}
 	if semanticFirst == "" {
-		semanticFirst = strings.TrimSpace(strings.ReplaceAll(out.Body, "\n", " "))
+		// 若正文全空，尝试基于附件生成预览
+		trimmedBody := strings.TrimSpace(strings.ReplaceAll(out.Body, "\n", " "))
+		if trimmedBody == "" && out.HasAttachments && len(out.Attachments) > 0 {
+			maxList := out.Attachments
+			if len(maxList) > 5 { // 预览最多列出 5 个
+				maxList = maxList[:5]
+			}
+			semanticFirst = "Attachments: " + strings.Join(maxList, ", ")
+			if len(out.Attachments) > len(maxList) {
+				semanticFirst += fmt.Sprintf(" (+%d more)", len(out.Attachments)-len(maxList))
+			}
+		} else {
+			semanticFirst = trimmedBody
+		}
 	}
 	previewLimit := 140
 	if len(semanticFirst) > previewLimit {

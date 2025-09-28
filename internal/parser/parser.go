@@ -95,7 +95,12 @@ func parseRaw(raw []byte, im *imap.Message, cfg *config.Config) (*Message, error
 			name = decodeHeader(name)
 		}
 		if name != "" {
-			from = fmt.Sprintf("%s <%s>", name, addr.Address)
+			// 如果显示名与地址相同（大小写忽略），避免冗余格式
+			if strings.EqualFold(name, addr.Address) {
+				from = addr.Address
+			} else {
+				from = fmt.Sprintf("%s <%s>", name, addr.Address)
+			}
 		} else {
 			from = addr.Address
 		}
@@ -109,30 +114,46 @@ func parseRaw(raw []byte, im *imap.Message, cfg *config.Config) (*Message, error
 	msg := &Message{Subject: subj, From: from, Date: date, Body: body}
 	// 附件检测（基于 imap.Message BodyStructure）
 	if im != nil && im.BodyStructure != nil {
-		var names []string
+		var ordered []string
+		seen := make(map[string]struct{})
 		var walk func(bs *imap.BodyStructure)
 		walk = func(bs *imap.BodyStructure) {
 			if bs == nil {
 				return
 			}
-			if len(bs.Parts) > 0 { // multipart
+			if len(bs.Parts) > 0 { // multipart 递归
 				for _, p := range bs.Parts {
 					walk(p)
 				}
 				return
 			}
-			// 单一 part，判断是否为附件：
+			// 叶子 part，判断是否附件
 			disp := strings.ToLower(bs.Disposition)
 			if disp == "attachment" || disp == "inline" {
-				if filename := firstNonEmpty(bs.Params["name"], bs.Params["filename"], bs.DispositionParams["filename"], bs.DispositionParams["name"]); filename != "" {
-					names = append(names, filename)
+				// 跳过内联图片（若配置启用）
+				if cfg.SkipInlineImages && disp == "inline" && strings.EqualFold(bs.MIMEType, "image") {
+					return
 				}
+				filename := firstNonEmpty(bs.Params["name"], bs.Params["filename"], bs.DispositionParams["filename"], bs.DispositionParams["name"])
+				if filename == "" {
+					return
+				}
+				decodedName := decodeHeader(filename)
+				candidate := strings.TrimSpace(decodedName)
+				if candidate == "" {
+					candidate = filename
+				}
+				if _, ok := seen[candidate]; ok {
+					return
+				}
+				seen[candidate] = struct{}{}
+				ordered = append(ordered, candidate)
 			}
 		}
 		walk(im.BodyStructure)
-		if len(names) > 0 {
+		if len(ordered) > 0 {
 			msg.HasAttachments = true
-			msg.AttachmentNames = names
+			msg.AttachmentNames = ordered
 		}
 	}
 	if cfg.IncludeRawHTML {

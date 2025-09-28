@@ -8,7 +8,7 @@
 * 稳定：指数回退重连，掉线自动恢复
 * 解析：支持多部件 multipart/alternative，优先纯文本；若仅有 HTML 自动剥离标签
 * 可选原始：可输出 `raw_html` 原文与基础结构化 `blocks`（heading / paragraph / list / blockquote / code）
-* 附件检测：输出 `has_attachments` 与 `attachments` 文件名列表（基于 BodyStructure）
+* 附件检测：输出 `has_attachments` / `attachment_count` 与 `attachments` 文件名列表（基于 BodyStructure，支持 RFC2047 解码、去重；可选跳过内联图片）
 * 编码：自动解码 RFC2047 编码主题，支持常见中文编码（GB2312/GBK -> UTF-8）
 * 安全：支持 TLS / STARTTLS，可选跳过证书验证（测试环境）
 * Webhook：JSON POST，失败重试（指数退避），可自定义附加 HTTP Header
@@ -91,6 +91,7 @@ html2text: simple   # simple|preserve-line|none
 | --html2text | HTML2TEXT_MODE | HTML 转文本策略 (simple / preserve-line / none) | simple |
 | --raw-html | RAW_HTML | 在 payload 中包含原始 HTML | false |
 | --enable-blocks | ENABLE_BLOCKS | 基于 HTML 构建轻量 blocks AST | false |
+| --skip-inline-images | SKIP_INLINE_IMAGES | 忽略 disposition=inline 且为 image/* 的内联图片附件 | false |
 | --debug | DEBUG | 启用调试日志 | false |
 
 > 优先级：命令行 > 环境变量 > 内部默认值。
@@ -114,6 +115,7 @@ html2text: simple   # simple|preserve-line|none
   "body_lines": ["这是纯文本内容 Plain"],
   "word_count": 2,
   "has_attachments": true,
+  "attachment_count": 2,
   "attachments": ["agenda.pdf", "说明.docx"],
   "mailbox": "INBOX",
   "timestamp": 1727500000
@@ -211,16 +213,25 @@ imapclient 2025/09/28 11:05:10.126500 update baseline=43 restart idle
 
 ### 附件字段
 
-当邮件任一 MIME part 的 Disposition 为 `attachment` 或 `inline`，并且其参数（`name` / `filename`）存在，则：
+判定规则：遍历 BodyStructure 叶子 part：
 
-* `has_attachments`: true
-* `attachments`: ["文件1", "文件2" ...]
+1. 若其 `Disposition` 为 `attachment` 或 `inline`
+2. 且存在文件名参数：`name` / `filename` / disposition 参数中的同名键
+3. 则视为一个附件条目；文件名会进行 RFC2047 / charset 解码。
 
-注意：目前不抓取附件内容，仅列出名称；未来可扩展：大小、MIME 类型、hash、过滤策略等。
+特性：
+
+* `has_attachments`: 是否存在任意附件
+* `attachment_count`: 附件数量（去重后）
+* `attachments`: 去重（保持首次出现顺序）的文件名列表
+* `--skip-inline-images`：若开启并且附件为 `Disposition=inline` 且 MIME 主类型为 `image`（例如签名里嵌入的小图标 / logo），则忽略，不计入上述统计
+* 文件名会尝试 RFC2047 解码，无法解码保留原文
+* 仅列出名称，不抓取内容；后续可拓展大小、MIME、哈希等
 
 ### 预览与词数逻辑
 
 * 预览优先使用首个“语义行”——过滤掉疑似样式/模板噪音行（包含 `{` / `@media` / `font-family` 等）
+* 若正文为空但存在附件，则预览回退为 `Attachments: name1, name2 (+N more)` 格式（最多列出 5 个文件名）
 * 词数统计：
   * 英文/数字：按空白与连续字母数字序列为一个词
   * CJK（中日韩统一表意区 0x4E00–0x9FFF）：按单字计数

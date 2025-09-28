@@ -30,6 +30,7 @@ type Config struct {
 	HTMLToTextMode     string        `yaml:"html2text"`     // simple | preserve-line | none
 	IncludeRawHTML     bool          `yaml:"raw_html"`      // 是否在 payload 中包含原始 HTML（若存在）
 	EnableBlocks       bool          `yaml:"enable_blocks"` // 是否基于 HTML 解析结构化 blocks
+	SkipInlineImages   bool          `yaml:"skip_inline_images"` // 是否忽略 disposition=inline 且 content-type image/* 的附件
 	Debug              bool          `yaml:"debug"`
 }
 
@@ -53,6 +54,7 @@ type fileConfig struct {
 	HTMLToTextMode     *string        `yaml:"html2text"`
 	IncludeRawHTML     *bool          `yaml:"raw_html"`
 	EnableBlocks       *bool          `yaml:"enable_blocks"`
+	SkipInlineImages   *bool          `yaml:"skip_inline_images"`
 	Debug              *bool          `yaml:"debug"`
 }
 
@@ -132,6 +134,7 @@ func Load() (*Config, error) {
 		DrainTimeout:     3 * time.Second,
 		IncludeRawHTML:   false,
 		EnableBlocks:     false,
+		SkipInlineImages: false,
 	}
 
 	// 2. 环境变量覆盖 (若存在)
@@ -207,6 +210,9 @@ func Load() (*Config, error) {
 	if v, ok := os.LookupEnv("ENABLE_BLOCKS"); ok {
 		cfg.EnableBlocks = parseBool(v)
 	}
+	if v, ok := os.LookupEnv("SKIP_INLINE_IMAGES"); ok {
+		cfg.SkipInlineImages = parseBool(v)
+	}
 	if v, ok := os.LookupEnv("DEBUG"); ok {
 		cfg.Debug = parseBool(v)
 	}
@@ -264,6 +270,8 @@ func Load() (*Config, error) {
 	flag.Var(bfRaw, "raw-html", "在 Webhook Payload 中包含原始 HTML 内容 (可能较大)")
 	bfBlocks := &boolFlag{val: cfg.EnableBlocks}
 	flag.Var(bfBlocks, "enable-blocks", "基于 HTML 解析结构化 blocks (实验特性)")
+	bfSkipInline := &boolFlag{val: cfg.SkipInlineImages}
+	flag.Var(bfSkipInline, "skip-inline-images", "忽略 disposition=inline 且 content-type image/* 的嵌入图片附件")
 	bfDebug := &boolFlag{val: cfg.Debug}
 	flag.Var(bfDebug, "debug", "启用调试日志")
 	// 也支持再次传入 --config (但不会再解析文件)
@@ -325,6 +333,9 @@ func Load() (*Config, error) {
 	}
 	if bfBlocks.set {
 		cfg.EnableBlocks = bfBlocks.val
+	}
+	if bfSkipInline.set {
+		cfg.SkipInlineImages = bfSkipInline.val
 	}
 	if bfDebug.set {
 		cfg.Debug = bfDebug.val
@@ -411,6 +422,9 @@ func mergeFile(path string, base *Config) error {
 	}
 	if fc.EnableBlocks != nil {
 		base.EnableBlocks = *fc.EnableBlocks
+	}
+	if fc.SkipInlineImages != nil {
+		base.SkipInlineImages = *fc.SkipInlineImages
 	}
 	return nil
 }
