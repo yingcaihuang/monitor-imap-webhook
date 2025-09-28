@@ -13,18 +13,18 @@ import (
 )
 
 type Payload struct {
-	UID       uint32        `json:"uid"`
-	Subject   string        `json:"subject"`
-	From      string        `json:"from"`
-	Date      string        `json:"date"`
-	Body      string        `json:"body"`                 // 原始（已做 html->text 处理后的）纯文本
-	BodyLines []string      `json:"body_lines,omitempty"` // 拆分后的行（去除多余空行）
-	Preview   string        `json:"preview"`              // 前 N 字符预览
-	WordCount int           `json:"word_count"`
-	Mailbox   string        `json:"mailbox"`
-	Timestamp int64         `json:"timestamp"`
-	RawHTML   string        `json:"raw_html,omitempty"` // 原始 HTML (可选)
-	Blocks    []interface{} `json:"blocks,omitempty"`   // 结构化 AST blocks (可选)
+	UID            uint32        `json:"uid"`
+	Subject        string        `json:"subject"`
+	From           string        `json:"from"`
+	Date           string        `json:"date"`
+	Body           string        `json:"body"`                 // 原始（已做 html->text 处理后的）纯文本
+	BodyLines      []string      `json:"body_lines,omitempty"` // 拆分后的行（去除多余空行）
+	Preview        string        `json:"preview"`              // 前 N 字符预览
+	WordCount      int           `json:"word_count"`
+	Mailbox        string        `json:"mailbox"`
+	Timestamp      int64         `json:"timestamp"`
+	RawHTML        string        `json:"raw_html,omitempty"` // 原始 HTML (可选)
+	Blocks         []interface{} `json:"blocks,omitempty"`   // 结构化 AST blocks (可选)
 	HasAttachments bool          `json:"has_attachments,omitempty"`
 	Attachments    []string      `json:"attachments,omitempty"`
 }
@@ -96,7 +96,9 @@ func BuildPayload(msg *Payload, bodyLimit int) Payload {
 	var semanticFirst string
 	for _, ln := range strings.Split(out.Body, "\n") {
 		ln = strings.TrimSpace(ln)
-		if ln == "" { continue }
+		if ln == "" {
+			continue
+		}
 		// 跳过可能是样式/模板噪音的行
 		low := strings.ToLower(ln)
 		if strings.HasPrefix(low, "@media") || strings.HasPrefix(low, "table ") || strings.Contains(low, "font-family") || strings.Contains(low, "{") {
@@ -142,15 +144,23 @@ func BuildPayload(msg *Payload, bodyLimit int) Payload {
 func mixedWordCount(s string) int {
 	var count int
 	current := strings.Builder{}
-	isASCIIWord := func(r rune) bool { return r < 128 && (r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' ) }
+	isASCIIWord := func(r rune) bool {
+		return r < 128 && (r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_')
+	}
 	isCJK := func(r rune) bool { return r >= 0x4E00 && r <= 0x9FFF }
-	flush := func() { if current.Len() > 0 { count++; current.Reset() } }
+	flush := func() {
+		if current.Len() > 0 {
+			count++
+			current.Reset()
+		}
+	}
 	for _, r := range s {
 		switch {
 		case isASCIIWord(r):
 			current.WriteRune(r)
 		case isCJK(r):
-			flush(); count++
+			flush()
+			count++
 		default:
 			flush()
 		}

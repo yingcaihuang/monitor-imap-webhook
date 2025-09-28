@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -12,7 +13,6 @@ import (
 	mailpkg "net/mail"
 	"regexp"
 	"strings"
-    "encoding/base64"
 
 	imap "github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -28,15 +28,15 @@ func init() {
 
 // Message holds parsed essential fields.
 type Message struct {
-	UID     uint32
-	Subject string
-	From    string
-	Date    string
-	Body    string
-	RawHTML string           // 原始 HTML (若存在且启用)
-	Blocks  []map[string]any // 结构化 blocks (若启用)
-	HasAttachments bool      // 是否存在附件
-	AttachmentNames []string // 附件文件名列表
+	UID             uint32
+	Subject         string
+	From            string
+	Date            string
+	Body            string
+	RawHTML         string           // 原始 HTML (若存在且启用)
+	Blocks          []map[string]any // 结构化 blocks (若启用)
+	HasAttachments  bool             // 是否存在附件
+	AttachmentNames []string         // 附件文件名列表
 }
 
 // FetchAndParse retrieves a message by UID and parses it.
@@ -112,9 +112,13 @@ func parseRaw(raw []byte, im *imap.Message, cfg *config.Config) (*Message, error
 		var names []string
 		var walk func(bs *imap.BodyStructure)
 		walk = func(bs *imap.BodyStructure) {
-			if bs == nil { return }
+			if bs == nil {
+				return
+			}
 			if len(bs.Parts) > 0 { // multipart
-				for _, p := range bs.Parts { walk(p) }
+				for _, p := range bs.Parts {
+					walk(p)
+				}
 				return
 			}
 			// 单一 part，判断是否为附件：
@@ -139,7 +143,6 @@ func parseRaw(raw []byte, im *imap.Message, cfg *config.Config) (*Message, error
 	}
 	return msg, nil
 }
-
 
 func decodeHeader(v string) string {
 	if v == "" {
@@ -270,17 +273,21 @@ func limitText(s string) string {
 
 // decodeTransferIfNeeded 解码 quoted-printable / base64
 func decodeTransferIfNeeded(data []byte, cte string) []byte {
- 	cte = strings.ToLower(strings.TrimSpace(cte))
- 	switch cte {
- 	case "quoted-printable":
- 		res, err := io.ReadAll(quotedprintable.NewReader(bytes.NewReader(data)))
- 		if err == nil { return res }
- 	case "base64":
- 		dec := make([]byte, base64.StdEncoding.DecodedLen(len(data)))
- 		n, err := base64.StdEncoding.Decode(dec, bytes.TrimSpace(data))
- 		if err == nil { return dec[:n] }
- 	}
- 	return data
+	cte = strings.ToLower(strings.TrimSpace(cte))
+	switch cte {
+	case "quoted-printable":
+		res, err := io.ReadAll(quotedprintable.NewReader(bytes.NewReader(data)))
+		if err == nil {
+			return res
+		}
+	case "base64":
+		dec := make([]byte, base64.StdEncoding.DecodedLen(len(data)))
+		n, err := base64.StdEncoding.Decode(dec, bytes.TrimSpace(data))
+		if err == nil {
+			return dec[:n]
+		}
+	}
+	return data
 }
 
 // removeStyleTags 去掉 <style>...</style>
