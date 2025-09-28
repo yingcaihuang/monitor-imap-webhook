@@ -70,6 +70,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout (shallow)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -85,7 +89,7 @@ jobs:
             prerelease=false
           else
             # main 分支：滚动预发布
-            short=$(git rev-parse --short HEAD)
+            short=${GITHUB_SHA::7}
             tag="main-latest"
             name="main-$short"
             prerelease=true
