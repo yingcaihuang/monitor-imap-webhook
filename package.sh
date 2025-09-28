@@ -9,7 +9,8 @@ BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 ARCH=${ARCH:-amd64}
 OS=${OS:-linux}
 PREFIX=${PREFIX:-/usr/local}
-OUT_DIR=dist
+ROOT_DIR=$(pwd)
+OUT_DIR=$ROOT_DIR/dist
 
 mkdir -p "$OUT_DIR"
 
@@ -76,25 +77,20 @@ COMMON_FPM_ARGS=(
   --before-remove "$PRERM"
 )
 
-pushd "$OUT_DIR" >/dev/null
+mkdir -p "$OUT_DIR"
 
 # deb
-fpm "${COMMON_FPM_ARGS[@]}" -t deb -p "$APP"_VERSION_ARCH.deb .
+fpm "${COMMON_FPM_ARGS[@]}" -t deb -p "$OUT_DIR/$APP"_VERSION_ARCH.deb "$PKG_DIR"/.
 # rpm
-fpm "${COMMON_FPM_ARGS[@]}" -t rpm -p "$APP"-VERSION.ARCH.rpm .
+fpm "${COMMON_FPM_ARGS[@]}" -t rpm -p "$OUT_DIR/$APP"-VERSION.ARCH.rpm "$PKG_DIR"/.
 
-# rename with actual version
+cd "$OUT_DIR"
 for f in $APP*_VERSION_*; do
   nv=${f/_VERSION_/$VERSION}
-  mv "$f" "$nv"
-  echo "Created $nv"
-  done
+  mv "$f" "$nv"; echo "Created $nv"; done || true
 for f in $APP*-VERSION.*; do
   nv=${f/-VERSION./-$VERSION.}
-  mv "$f" "$nv"
-  echo "Created $nv"
-  done
-
-popd >/dev/null
+  mv "$f" "$nv"; echo "Created $nv"; done || true
+cd "$ROOT_DIR"
 
 echo "==> Packages located in $OUT_DIR"
