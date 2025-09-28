@@ -1,5 +1,8 @@
 name: build-and-package
 
+permissions:
+  contents: write
+
 on:
   push:
     tags:
@@ -70,10 +73,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (shallow)
+      - name: Checkout (full)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -93,6 +96,13 @@ jobs:
             tag="main-latest"
             name="main-$short"
             prerelease=true
+            # 确保 rolling tag 指向当前提交（轻量标签或更新）
+            if git rev-parse -q --verify refs/tags/$tag >/dev/null; then
+              git tag -d $tag || true
+            fi
+            git tag -f $tag ${GITHUB_SHA}
+            git push origin :refs/tags/$tag || true
+            git push origin $tag || true
           fi
           echo "tag=$tag" >> $GITHUB_OUTPUT
           echo "name=$name" >> $GITHUB_OUTPUT
