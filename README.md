@@ -248,6 +248,10 @@ imapclient 2025/09/28 11:05:10.126500 update baseline=43 restart idle
 
 ```bash
 go build -o bin/monitor ./cmd/monitor
+
+# 使用脚本打包 deb / rpm (需安装 fpm)
+VERSION=v0.1.0 bash package.sh
+ls dist/
 ```
 
 ## 运行测试
@@ -257,6 +261,31 @@ go test ./...
 ```
 
 ## 设计要点
+
+## systemd 部署
+
+打包后安装生成的 deb/rpm 会放置：
+
+* 二进制：`/usr/local/bin/monitor`
+* 配置模板：`/etc/monitor-imap-webhook/config.example.yaml`
+* systemd 单元：`/lib/systemd/system/monitor-imap-webhook.service`
+
+首次安装会自动复制一份 `config.yaml`（若不存在）。修改 `/etc/monitor-imap-webhook/config.yaml` 后：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start monitor-imap-webhook
+sudo systemctl status monitor-imap-webhook
+journalctl -u monitor-imap-webhook -f
+```
+
+开机自启：
+
+```bash
+sudo systemctl enable monitor-imap-webhook
+```
+
+卸载包后 service 会被停止并禁用（配置文件保留，便于复装）。
 
 * 事件流：IMAP IDLE -> MailboxUpdate -> recent UID 计算 -> 解析 -> Webhook
 * 解析策略：优先 text/plain；无则 HTML -> 文本

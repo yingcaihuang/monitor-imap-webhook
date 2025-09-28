@@ -1,0 +1,17 @@
+# Ignore local runtime config
+config.yaml
+
+# Build artifacts
+bin/
+*.deb
+*.rpm
+*.tar.gz
+
+# Go build cache (optional)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out

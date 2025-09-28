@@ -1,0 +1,20 @@
+[Unit]
+Description=IMAP mailbox monitor -> Webhook forwarder
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/monitor --config /etc/monitor-imap-webhook/config.yaml
+Restart=on-failure
+RestartSec=3
+# 可根据需要设置环境变量覆盖配置
+Environment=GODEBUG=madvdontneed=1
+# 限制资源(可选)
+# MemoryMax=300M
+# NoNewPrivileges=true
+# ProtectSystem=full
+# ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
