@@ -27,9 +27,9 @@ type Config struct {
 	FetchBodySize      int           `yaml:"fetch_body_bytes"`
 	RetryMax           int           `yaml:"retry_max"`
 	RetryBaseBackoff   time.Duration `yaml:"retry_backoff"`
-	HTMLToTextMode     string        `yaml:"html2text"`     // simple | preserve-line | none
-	IncludeRawHTML     bool          `yaml:"raw_html"`      // 是否在 payload 中包含原始 HTML（若存在）
-	EnableBlocks       bool          `yaml:"enable_blocks"` // 是否基于 HTML 解析结构化 blocks
+	HTMLToTextMode     string        `yaml:"html2text"`          // simple | preserve-line | none
+	IncludeRawHTML     bool          `yaml:"raw_html"`           // 是否在 payload 中包含原始 HTML（若存在）
+	EnableBlocks       bool          `yaml:"enable_blocks"`      // 是否基于 HTML 解析结构化 blocks
 	SkipInlineImages   bool          `yaml:"skip_inline_images"` // 是否忽略 disposition=inline 且 content-type image/* 的附件
 	Debug              bool          `yaml:"debug"`
 }
